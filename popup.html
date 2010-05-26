@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset=utf-8>
+		<link href="img/theme.css" media="all" rel="stylesheet" type="text/css" />
+		<link href="img/style.css" media="all" rel="stylesheet" type="text/css" />
+		<script type="text/javascript" src="js/jquery.js"></script>
+		<script type="text/javascript" src="js/ui/jquery.ui.core.js"></script>
+		<script type="text/javascript" src="js/ui/jquery.ui.widget.js"></script>
+		<script type="text/javascript" src="js/ui/jquery.ui.mouse.js"></script>
+		<script type="text/javascript" src="js/ui/jquery.ui.slider.js"></script>
+		<script type="text/javascript">
+phr = {
+	init: function() {
+		var page = chrome.extension.getBackgroundPage();
+		var rx = /habrahabr/gi;
+		rx.compile(rx);
+		if (rx.test(page.bhr.url)) {
+			var data = page.bhr.storage_get(page.bhr.url);
+			if (data.loading == 0) {
+				if (data.valid) {
+					if (data.rate_min < 1000) {
+						$("#slider").slider({
+							range: true,
+							min: data.rate_min,
+							max: data.rate_max,
+							values: [data.val_min, data.val_max],
+							change: function(event, ui) {
+								phr.update(ui.values[0], ui.values[1]);
+								page.bhr.storage_set(page.bhr.url, {
+									val_min: ui.values[0],
+									val_max: ui.values[1]
+								});
+								page.bhr.update();
+							}
+						});
+						phr.update(data.val_min, data.val_max);
+					}
+					else $(document.body).html('Топик не содержит комментариев');
+				}
+				else $(document.body).html('Откройте топик для просмотра комментариев');
+			}
+			else $(document.body).html('Дождитесь загрузки страницы');
+		}
+		else $(document.body).html('Вы не на Хабре');
+	},
+	update: function(vmin, vmax) {
+		$('#val_min').html((vmin > 0 ? '+' : '') + vmin).css('color', '#' +(vmin > 0 ? '390' : (vmin == 0 ? '808080' : 'c00')));
+		$('#val_max').html((vmax > 0 ? '+' : '') + vmax).css('color', '#' + (vmax > 0 ? '390' : (vmax == 0 ? '808080' : 'c00')));
+	}
+};
+$(phr.init);
+
+		</script>
+	</head>
+	<body>
+		Рейтинг: <span id="val_min"></span> ... <span id="val_max"></span>
+		<div id="slider"></div>
+	</body>
+</html>
+		

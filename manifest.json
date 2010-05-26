@@ -1,0 +1,26 @@
+{
+	"name": "HabraRate",
+	"version": "1.1",
+	"description": "Show/hide topic`s comments on habrahabr.ru",
+	"icons": {
+		"16": "icon16.png",
+		"48": "icon48.png",
+		"128": "icon128.png" 
+	},
+	"browser_action": {
+		"default_icon": "icon.png",
+		"default_title": "HabraRate",
+		"popup": "popup.html"
+	},
+	"permissions": [
+		"tabs", "http://habrahabr.ru/*"
+	],
+	"content_scripts": [
+		{
+			"matches": ["http://habrahabr.ru/*"],
+			"css": ["img/inject.css"],
+			"js": ["js/jquery.js", "js/inject.js"]
+		}
+	],
+	"background_page": "background.html"
+}

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset=utf-8>
+		<script type="text/javascript" src="js/jquery.js"></script>
+		<script type="text/javascript">
+if (typeof localStorage['data'] == 'undefined') localStorage['data'] = {};
+if (localStorage.length > 3000) {
+	var cnt = localStorage.length - 3000;
+	for (k in localStorage) {
+		localStorage.removeItem(k);
+		cnt--;
+		if (cnt == 0) break;
+	}
+}
+bhr = {
+	data: {},
+	url: '',
+	storage_get: function(url) {
+		var ret = {
+			val_min: Number(localStorage[url + 'val_min']),
+			val_max: Number(localStorage[url + 'val_max'])
+		};
+		var d = bhr.data[url];
+		if (d) {
+			ret['rate_min'] = Number(d['rate_min']);
+			ret['rate_max'] = Number(d['rate_max']);
+			ret['loading'] = Number(d['loading']);
+			ret['valid'] = Number(d['valid']);
+			ret['loaded'] = Number(d['loaded']);
+		}
+		return ret;
+	},
+	storage_set: function(url, data) {
+		if (url == '') return;
+		if (!bhr.data[url]) bhr.data[url] = {};
+		if (typeof data.val_min != 'undefined') localStorage[url + 'val_min'] = data.val_min;
+		if (typeof data.val_max != 'undefined') localStorage[url + 'val_max'] = data.val_max;
+		if (typeof data.rate_min != 'undefined') bhr.data[url]['rate_min'] = data.rate_min;
+		if (typeof data.rate_min != 'undefined') bhr.data[url]['rate_max'] = data.rate_max;
+		if (typeof data.loading != 'undefined') bhr.data[url]['loading'] = data.loading;
+		if (typeof data.valid != 'undefined') bhr.data[url]['valid'] = data.valid;
+		if (typeof data.loaded != 'undefined') bhr.data[url]['loaded'] = data.loaded;
+	},
+	update: function() {
+		var data = bhr.storage_get(bhr.url);
+		chrome.tabs.executeScript(null, {code: "ihr.update(" + data.val_min + ", " + data.val_max + ");"});
+	}
+};
+chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+	var rx = /habrahabr/gi;
+	rx.compile(rx);
+	if (!rx.test(tab.url)) return;
+	if (changeInfo.status == 'loading') {
+		bhr.storage_set(tab.url, {loading: 1});
+		chrome.browserAction.setBadgeText({
+			text: '...',
+			tabId: tab.id
+		});
+		bhr.url = tab.url;
+	}
+	else if (changeInfo.status == 'complete') {
+		chrome.tabs.executeScript(null, {code: "ihr.info();"});
+	}
+});
+chrome.tabs.onSelectionChanged.addListener(function(tabId, selectInfo) {
+	chrome.tabs.get(tabId, function(tab) {
+		var rx = /habrahabr/gi;
+		rx.compile(rx);
+		bhr.url = rx.test(tab.url) ? tab.url : '';
+		if (bhr.url.length) {
+			var data = bhr.storage_get(bhr.url);
+			if (Number(data.loaded)) bhr.update();
+			else chrome.tabs.executeScript(null, {code: "ihr.info();"});
+		}
+	});
+});
+chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
+	if (request.type == 'load' && request.valid) {
+		var data = bhr.storage_get(request.url);
+		bhr.val_min = request.val_min;
+		bhr.val_max = request.val_max;
+	
+		if (data.length == 0) {
+			data.rate_min = data.val_min = request.val_min;
+			data.rate_max = data.val_max = request.val_max;
+		}
+		else {
+			data.rate_min = request.val_min;
+			data.rate_max = request.val_max;
+			data.val_min = Number(typeof data.val_min == 'undefined' || data.val_min == 'undefined' || isNaN(data.val_min) || request.val_min > data.val_min ? request.val_min : data.val_min);
+			data.val_max = Number(typeof data.val_max == 'undefined' || data.val_max == 'undefined' || isNaN(data.val_max) || request.val_max < data.val_max ? request.val_max : data.val_max);
+		}
+		data.valid = request.valid;
+		data.loaded = 1;
+		data.loading = 0;
+		bhr.storage_set(request.url, data);
+		bhr.update();
+	}
+	else chrome.browserAction.setBadgeText({
+		text: request.valid ? String(request.count) : '',
+		tabId: sender.tab.id
+	});
+});
+
+		</script>
+	</head>
+	<body></body>
+</html>
+		
