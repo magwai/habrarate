@@ -24,7 +24,7 @@ ihr = {
 	},
 	update: function(val_min, val_max) {
 		$('.ufo-was-here,.ihr_open').unbind('hover').remove();
-		$('#comments .comment_holder').each(function() {
+		$('#comments .comment_item').each(function() {
 			var h = $(this);
 			var n = h.find('.mark:first span');
 			if (n.length) {
